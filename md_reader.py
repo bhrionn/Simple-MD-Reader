@@ -49,7 +49,6 @@ class MarkdownRenderer:
     def __init__(self):
         self.in_code_block = False
         self.code_block_lang = ""
-        self.in_list = False
     
     def render(self, markdown_text: str) -> str:
         """Render markdown text to colored terminal output."""
@@ -107,7 +106,18 @@ class MarkdownRenderer:
         level = len(match.group(1))
         text = match.group(2)
         
-        # Remove inline formatting markers for cleaner header display
+        # Store the original text length before formatting
+        # Remove markdown formatting for length calculation
+        clean_text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+        clean_text = re.sub(r'__([^_]+)__', r'\1', clean_text)
+        clean_text = re.sub(r'\*([^*]+)\*', r'\1', clean_text)
+        clean_text = re.sub(r'_([^_]+)_', r'\1', clean_text)
+        clean_text = re.sub(r'`([^`]+)`', r'\1', clean_text)
+        clean_text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean_text)
+        clean_text = re.sub(r'~~([^~]+)~~', r'\1', clean_text)
+        visible_length = len(clean_text)
+        
+        # Apply inline formatting for display
         text = self._render_inline_formatting(text)
         
         colors = {
@@ -123,7 +133,7 @@ class MarkdownRenderer:
         
         result = f"\n{color}{text}{Colors.RESET}"
         if underline_char and level <= 2:
-            result += f"\n{color}{underline_char * len(text)}{Colors.RESET}"
+            result += f"\n{color}{underline_char * visible_length}{Colors.RESET}"
         
         return result
     
@@ -160,33 +170,42 @@ class MarkdownRenderer:
     
     def _render_inline_formatting(self, text: str) -> str:
         """Render inline markdown formatting (bold, italic, code, links)."""
-        # Inline code
+        # Inline code (process first to avoid conflicts)
         text = re.sub(
             r'`([^`]+)`',
             f'{Colors.BG_GRAY}{Colors.BRIGHT_WHITE}\\1{Colors.RESET}',
             text
         )
         
-        # Bold
+        # Bold and italic combined with *** (process before bold and italic separately)
         text = re.sub(
-            r'\*\*([^*]+)\*\*',
+            r'\*\*\*([^*\n]+?)\*\*\*',
+            f'{Colors.BOLD}{Colors.ITALIC}\\1{Colors.RESET}',
+            text
+        )
+        
+        # Bold with ** (process before single * for italic)
+        text = re.sub(
+            r'\*\*([^*\n]+?)\*\*',
             f'{Colors.BOLD}\\1{Colors.RESET}',
             text
         )
+        # Bold with __
         text = re.sub(
-            r'__([^_]+)__',
+            r'__([^_\n]+?)__',
             f'{Colors.BOLD}\\1{Colors.RESET}',
             text
         )
         
-        # Italic
+        # Italic with * (after bold **)
         text = re.sub(
-            r'\*([^*]+)\*',
+            r'(?<!\*)\*([^*\n]+?)\*(?!\*)',
             f'{Colors.ITALIC}\\1{Colors.RESET}',
             text
         )
+        # Italic with _
         text = re.sub(
-            r'_([^_]+)_',
+            r'(?<!_)_([^_\n]+?)_(?!_)',
             f'{Colors.ITALIC}\\1{Colors.RESET}',
             text
         )

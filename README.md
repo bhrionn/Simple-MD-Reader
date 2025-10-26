@@ -55,7 +55,7 @@ python3 md_reader.py /path/to/your/document.md
 
 - **Headers** (`# H1` through `###### H6`)
 - **Bold** (`**text**` or `__text__`)
-- **Italic** (`*text*` or `_text*`)
+- **Italic** (`*text*` or `_text_`)
 - **Strikethrough** (`~~text~~`)
 - **Inline Code** (`` `code` ``)
 - **Code Blocks** (``` ``` ```)
